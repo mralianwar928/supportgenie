@@ -5,6 +5,7 @@ from geniesupport.intent import classify_intent
 from src.geniesupport.retrieval import retrieve_with_scores
 from src.geniesupport.memory import add_turn, format_history
 from src.geniesupport.cost import extract_usage, compute_cost
+from langsmith import traceable
 
 _llm = ChatGroq(model=CHAT_MODEL, temperature=0)
 
@@ -27,6 +28,7 @@ def _format_context(scored_docs):
         f"[{d.metadata.get('title', 'Doc')}]\n{d.page_content}" for d, _ in scored_docs
     )
 
+@traceable(name="handle_message")
 def handle_message(message: str, session_id: str = "default") -> dict:
     t0 = time.time()
     history = format_history(session_id)        # prior turns only
