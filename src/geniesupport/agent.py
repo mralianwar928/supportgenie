@@ -6,7 +6,7 @@ from src.geniesupport.retrieval import retrieve_with_scores
 from src.geniesupport.memory import add_turn, format_history
 from src.geniesupport.cost import extract_usage, compute_cost
 from langsmith import traceable
-
+from src.geniesupport.cache import get_cached, put_cache
 _llm = ChatGroq(model=CHAT_MODEL, temperature=0)
 
 ANSWER_SYSTEM = """You are a friendly, concise support assistant for Nimbus, a project
@@ -31,7 +31,12 @@ def _format_context(scored_docs):
 @traceable(name="handle_message")
 def handle_message(message: str, session_id: str = "default") -> dict:
     t0 = time.time()
-    history = format_history(session_id)        # prior turns only
+ # --- CACHE CHECK: if we've answered this before, reuse it (instant, free) ---
+    cached = get_cached(message)
+    if cached:
+        return {**cached, "cached": True,"latency_ms": 0, "cost_usd": 0.0}
+
+    history = format_history(session_id)          # prior turns only
     sources, cost, escalated, reason = [], 0.0, False, None
 
     # 1. Intent
@@ -49,12 +54,12 @@ def handle_message(message: str, session_id: str = "default") -> dict:
         top_score = scored[0][1] if scored else 0.0
 
         if not scored or top_score < RELEVANCE_THRESHOLD:
-            # 3. Confidence gate failed → escalate
+            # 3. Confidence gate failed -> escalate
             reply = ESCALATION_MESSAGE
             escalated = True
             reason = f"low retrieval confidence (top score {top_score:.2f} < {RELEVANCE_THRESHOLD})"
         else:
-            # 4. Confident → generate a grounded answer
+            # 4. Confident -> generate a grounded answer
             context = _format_context(scored)
             prompt = ANSWER_SYSTEM.format(history=history, context=context)
             response = _llm.invoke([("system", prompt), ("human", message)])
@@ -68,11 +73,14 @@ def handle_message(message: str, session_id: str = "default") -> dict:
     add_turn(session_id, "customer", message)
     add_turn(session_id, "assistant", reply)
 
-    return {
+    result = {
         "reply": reply,
         "escalated": escalated,
         "reason": reason,
         "sources": sources,
         "latency_ms": round((time.time() - t0) * 1000),
         "cost_usd": round(cost, 6),
-    }
+    }    # --- CACHE SAVE: only cache successful answers, never escalations ---
+    if not escalated:
+        put_cache(message, result)
+    return result
