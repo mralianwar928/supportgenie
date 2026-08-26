@@ -1,0 +1,10 @@
+[
+  {"question": "How do I reset my password?", "should_escalate": false, "expect_source": "Account Security"},
+  {"question": "How much is the Pro plan?", "should_escalate": false, "expect_source": "Billing"},
+  {"question": "How do I invite a teammate?", "should_escalate": false, "expect_source": "Teams And Permissions"},
+  {"question": "How do I connect Slack?", "should_escalate": false, "expect_source": "Integrations"},
+  {"question": "How do I create my first project?", "should_escalate": false, "expect_source": "Getting Started"},
+  {"question": "I want a refund right now", "should_escalate": true, "expect_source": null},
+  {"question": "Please cancel my subscription", "should_escalate": true, "expect_source": null},
+  {"question": "What's the capital of France?", "should_escalate": true, "expect_source": null}
+]
