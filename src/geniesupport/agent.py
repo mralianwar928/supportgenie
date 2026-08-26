@@ -1,7 +1,7 @@
 import time
 from langchain_groq import ChatGroq
 from src.geniesupport.config import CHAT_MODEL, RELEVANCE_THRESHOLD
-from geniesupport.intent import classify_intent
+from src.geniesupport.intent import classify_intent
 from src.geniesupport.retrieval import retrieve_with_scores
 from src.geniesupport.memory import add_turn, format_history
 from src.geniesupport.cost import extract_usage, compute_cost
