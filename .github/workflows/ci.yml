@@ -1,0 +1,27 @@
+name: CI — Quality Gate
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  quality-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Build knowledge base
+        run: python -m src.geniesupport.ingest
+
+      - name: Run evals (fails the build if quality regressed)
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python evals/evaluate.py
